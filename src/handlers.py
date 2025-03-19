@@ -16,25 +16,34 @@ async def handle_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
     text = message.text or message.caption
 
-    # Check for links
-    if not (text and re.search(r'https?://\S+', text)):
+    # Link REGEX 
+    # Use this regex pattern in your code
+
+    LINK_REGEX = re.compile(
+        r'(?:https?://)?'  # Optional http/https
+        r'(?:www\.)?'       # Optional www.
+        r'\w+\.\w+'        # Domain and TLD (e.g., example.com)
+        r'(?:/\S*)?'       # Optional path (e.g., /page?id=1)
+    )
+
+    if not text:
         return
 
-    try:
+    # Check for links using the new regex
+    if LINK_REGEX.search(text):
+        # Fetch admins and delete message (same as before)
         admin_ids = await admin_cache.get_admins(context.bot, message.chat_id)
         if not admin_ids:
             return
 
-        # Allow admins
         if message.from_user.id in admin_ids:
             return
 
-        # Delete message
-        await message.delete()
-        await message.reply_text(
-            f"⚠️ {message.from_user.first_name}, only admins can post links!",
-            reply_to_message_id=message.message_id
-        )
-    except Exception as e:
-        logging.error(f"Failed to handle message: {e}")
-        await message.reply_text("❌ I need admin privileges to delete messages!")
+        try:
+            await message.delete()
+            await message.reply_text(
+                f"⚠️ {message.from_user.first_name}, links are not allowed!",
+                reply_to_message_id=message.message_id
+            )
+        except Exception as e:
+            logging.error(f"Failed to delete message: {e}")
